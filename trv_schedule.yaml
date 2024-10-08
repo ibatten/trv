@@ -191,4 +191,4 @@ actions:
               hvac_mode: heat
             target:
               device_id: !input trv
-mode: single
+mode: queued
