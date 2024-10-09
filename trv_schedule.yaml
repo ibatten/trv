@@ -44,6 +44,16 @@ blueprint:
           min: 5
           max: 15
           unit_of_measurement: "°C"
+    night_temperature:
+      name: Night Temperature
+      description: temperature to set when night time, irrespective of anything else
+      default: 8
+      selector:
+        number:
+          mode: box
+          min: 5
+          max: 15
+          unit_of_measurement: "°C"
     boost_temperature:
       name: Boost Temperature
       description: temperature to set when boosting
@@ -111,6 +121,9 @@ triggers:
   - trigger: time
     at: "23:30:00"
     id: force_off
+  - trigger: time
+    at: "07:30:00"
+    id: night_to_day
 conditions: []
 actions:
   - choose:
@@ -121,6 +134,7 @@ actions:
             id:
               - boost_off
               - alarm_home
+              - night_to_day
           - condition: state
             entity_id: !input schedule
             state: "on"
@@ -133,14 +147,16 @@ actions:
             target:
               device_id: !input trv
       # when boost finishes and the above clause fails
-      # (ie, schedule is off) close valve
+      # (ie, schedule is off) close valve.  alarm_home
+      # switches on schedule, alarm_away always turns off
       - conditions:
           - condition: trigger
             id:
               - boost_off
               - turn_off
+              - alarm_home
               - alarm_away
-              - force_off
+              - night_to_day
         sequence:
           - action: climate.set_temperature
             metadata: {}
@@ -149,7 +165,22 @@ actions:
               hvac_mode: heat
             target:
               device_id: !input trv
+      # strictly reduce temperature at night
+      - conditions:
+          - condition: trigger
+            id:
+              - force_off
+        sequence:
+          - action: climate.set_temperature
+            metadata: {}
+            data:
+              temperature: !input night_temperature
+              hvac_mode: heat
+            target:
+              device_id: !input trv
       # when logburner comes on and we care, turn off
+      # don't worry about logburner coming off, that
+      # will be picked up in the morning
       - conditions:
           - condition: trigger
             id:
