@@ -21,15 +21,27 @@ blueprint:
               manufacturer: SONOFF
           entity:
             - domain: climate
-    temperature:
-      name: Schedule Temperature
+    on_temperature:
+      name: On Temperature
       description: temperature to set when on
       default: 19
       selector:
         number:
           mode: box
-          min: 10
+          min: 16
           max: 22
+    # use this rather than the 'off' state to reduce the number of state transitions
+    # from the valves as they come on and to ensure that just manually setting from
+    # the value works without any extra fuss
+    off_temperature:
+      name: Off Temperature
+      description: temperature to set when off
+      default: 12
+      selector:
+        number:
+          mode: box
+          min: 5
+          max: 15
     boost_temperature:
       name: Boost Temperature
       description: temperature to set when boosting
@@ -113,7 +125,7 @@ actions:
           - action: climate.set_temperature
             metadata: {}
             data:
-              temperature: !input temperature
+              temperature: !input on_temperature
               hvac_mode: heat
             target:
               device_id: !input trv
@@ -127,9 +139,11 @@ actions:
               - alarm_away
               - force_off
         sequence:
-          - action: climate.turn_off
+          - action: climate.set_temperature
             metadata: {}
-            data: {}
+            data:
+              temperature: !input off_temperature
+              hvac_mode: heat
             target:
               device_id: !input trv
       # when logburner comes on and we care, turn off
@@ -140,9 +154,11 @@ actions:
           - condition: template
             value_template: "{{ off_on_fireplace }}"
         sequence:
-          - action: climate.turn_off
+          - action: climate.set_temperature
             metadata: {}
-            data: {}
+            data:
+              temperature: !input off_temperature
+              hvac_mode: heat
             target:
               device_id: !input trv
       # simple case: schedule on and boost already on, do nothing
@@ -187,7 +203,7 @@ actions:
           - action: climate.set_temperature
             metadata: {}
             data:
-              temperature: !input temperature
+              temperature: !input on_temperature
               hvac_mode: heat
             target:
               device_id: !input trv
