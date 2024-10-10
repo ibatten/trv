@@ -31,8 +31,10 @@ blueprint:
           mode: box
           min: 16
           max: 22
-    # use this rather than the 'off' state to reduce the number of state transitions
-    # from the valves as they come on and to ensure that just manually setting from
+    # use this rather than the 'off' state to reduce 
+    # the number of state transitions
+    # from the valves as they come on and to ensure that 
+    # just manually setting from
     # the value works without any extra fuss
     off_temperature:
       name: Off Temperature
@@ -46,7 +48,8 @@ blueprint:
           unit_of_measurement: "°C"
     night_temperature:
       name: Night Temperature
-      description: temperature to set when night time, irrespective of anything else
+      description: >- 
+          temperature to set when night time, irrespective of anything else
       default: 8
       selector:
         number:
