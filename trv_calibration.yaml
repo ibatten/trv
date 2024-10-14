@@ -12,6 +12,8 @@ blueprint:
           filter:
             - domain: climate
               integration: zha
+              supported_features:
+                - climate.ClimateEntityFeature.TARGET_TEMPERATURE
     remote_sensor:
       name: Remote Sensor
       description: the sensor to hook to this TRV
