@@ -105,6 +105,11 @@ triggers:
     entity_id:
       - binary_sensor.boiler_boost
     to: "on"
+    # give time for the user to fiddle with the temperature
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
     id: boost_on
   - trigger: state
     entity_id:
@@ -207,7 +212,7 @@ actions:
             entity_id: binary_sensor.boiler_boost
             state: "on"
         sequence:
-      # boost has fired, open valve and set temperature
+      # boost has fired, open valve and set temperature to whatever was selected
       - conditions:
           - condition: trigger
             id:
@@ -219,7 +224,7 @@ actions:
           - action: climate.set_temperature
             metadata: {}
             data:
-              temperature: !input boost_temperature
+              temperature: "{{ states('sensor.boiler_target_temperature') }}"
               hvac_mode: heat
             target:
               device_id: !input trv
