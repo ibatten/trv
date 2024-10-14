@@ -57,6 +57,7 @@ blueprint:
           min: 5
           max: 15
           unit_of_measurement: "°C"
+    # temperature comes from hive device
     boost_schedule:
       name: Boost Permitted Schedule
       description: Should we boost?
