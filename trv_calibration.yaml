@@ -1,0 +1,57 @@
+---
+blueprint:
+  name: Calibrate TRV
+  description: Use an external sensor to calibrate a TRV
+  domain: automation
+  input:
+    trv:
+      name: TRV
+      description: the TRV to calibrate
+      selector:
+        entity:
+          filter:
+            - domain: climate
+              integration: zha
+    remote_sensor:
+      name: Remote Sensor
+      description: the sensor to hook to this TRV
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: temperature
+    local_offset:
+      name: Offset via Zigbee
+      description: >
+          the offset on the radiator TRV,
+          we have to ask as not predicatable
+      selector:
+        entity:
+          filter:
+            - domain: number
+              integration: zha
+
+triggers:
+  - trigger: state
+    entity_id:
+      - !input remote_sensor
+    for:
+      seconds: 30
+  - trigger: state
+    entity_id: 
+      - !input trv
+    attribute: current_temperature
+    for:
+      seconds: 30
+
+conditions: []
+
+actions:
+  - action: script.update_local_temperature_offset
+    metadata: {}
+    data:
+      local_offset: !input local_offset
+      sensor: !input remote_sensor
+      trv_sensor: !input trv
+  - delay:
+      minutes: 5

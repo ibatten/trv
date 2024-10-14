@@ -57,16 +57,6 @@ blueprint:
           min: 5
           max: 15
           unit_of_measurement: "°C"
-    boost_temperature:
-      name: Boost Temperature
-      description: temperature to set when boosting
-      default: 22
-      selector:
-        number:
-          mode: box
-          min: 18
-          max: 25
-          unit_of_measurement: "°C"
     boost_schedule:
       name: Boost Permitted Schedule
       description: Should we boost?
