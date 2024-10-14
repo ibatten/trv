@@ -126,11 +126,19 @@ triggers:
       - binary_sensor.alarm_disarmed
     to: "off"
     id: alarm_away
-  - trigger: time
-    at: "23:30:00"
+  - trigger: state
+    entity_id:
+      - schedule.overnight
+    to: "on"
+    for:
+      minutes: 2
     id: force_off
-  - trigger: time
-    at: "07:30:00"
+  - trigger: state
+    entity_id:
+      - schedule.overnight
+    to: "off"
+    for:
+      minutes: 2
     id: night_to_day
 conditions: []
 actions:
