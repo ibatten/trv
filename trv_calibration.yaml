@@ -4,7 +4,7 @@ blueprint:
   description: Use an external sensor to calibrate a TRV
   domain: automation
   input:
-    trv:
+    trv_sensor:
       name: TRV
       description: the TRV to calibrate
       selector:
@@ -32,6 +32,32 @@ blueprint:
           filter:
             - domain: number
               integration: zha
+    threshold:
+      name: Threshold for making changes
+      description: >
+          changes in temperature offset of less than this are ignored.  This 
+          number must be positive
+      default: 0.2
+      selector:
+        number:
+           min: 0.1
+           max: 1.0
+           step: 0.1
+           unit_of_measurement: "°C"
+              
+variables:
+  local_offset: !input local_offset
+  remote_sensor: !input remote_sensor
+  trv_sensor: !input trv_sensor
+  threshold: !input threshold
+  old_offset: |
+    {{ states(local_offset)|float(16) }}
+  new_offset: |
+    {{ (states(remote_sensor)|float(16) -
+       ( state_attr (trv_sensor, 'current_temperature')|float(16) -
+         old_offset ))|round(precision=1) }}
+  offset_changed: |
+    {{ (old_offset - new_offset)|abs >= threshold }}
 
 triggers:
   - trigger: state
@@ -41,19 +67,19 @@ triggers:
       seconds: 30
   - trigger: state
     entity_id: 
-      - !input trv
+      - !input trv_sensor
     attribute: current_temperature
     for:
       seconds: 30
 
-conditions: []
+conditions: "{{ offset_changed }}"
 
 actions:
-  - action: script.update_local_temperature_offset
+  - action: number.set_value
     metadata: {}
     data:
-      local_offset: !input local_offset
-      sensor: !input remote_sensor
-      trv_sensor: !input trv
+      value: "{{ new_offset }}"
+    target:
+      entity_id: "{{ local_offset }}"
   - delay:
       minutes: 5
