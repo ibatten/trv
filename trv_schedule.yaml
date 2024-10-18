@@ -228,7 +228,7 @@ actions:
             target:
               device_id: !input trv
       # main case: schedule has fired, boost is off,
-      # stove is off, set temp and turn on
+      # stove is off, alarm is off, set temp and turn on
       - conditions:
           - condition: trigger
             id:
@@ -236,6 +236,9 @@ actions:
           - condition: state
             entity_id: binary_sensor.boiler_boost
             state: "off"
+          - condition: state
+            entity_id: binary_sensor.alarm_disarmed
+            state: "on"
           - condition: template
             value_template: |-
                   {{ not (is_state('binary_sensor.log_burner_running', 'on')

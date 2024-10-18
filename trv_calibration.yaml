@@ -44,20 +44,34 @@ blueprint:
           max: 1.0
           step: 0.1
           unit_of_measurement: "°C"
+    alpha:
+      name: Damping factor (0 = all new input)
+      description: >
+          Amount of old sensor value to stir in, sensible values from
+          zero (all new) to 0.25 (add in a quarter of the old value)
+      default: 0.2
+      selector:
+        number:
+          min: 0
+          max: 0.5
+          step: 0.05
 
 variables:
   local_offset: !input local_offset
   remote_sensor: !input remote_sensor
   trv_sensor: !input trv_sensor
   threshold: !input threshold
-  old_offset: |
-    {{ states(local_offset)|float(16) }}
-  new_offset: |
-    {{ (states(remote_sensor)|float(16) -
-       ( state_attr (trv_sensor, 'current_temperature')|float(16) -
-         old_offset ))|round(precision=1) }}
-  offset_changed: |
-    {{ (old_offset - new_offset)|abs >= threshold }}
+  alpha: !input alpha
+  invalid_inputs: |
+     {{ is_state(remote_sensor, ['unknown', 'unavailable']) or
+        is_state(trv_sensor, ['unknown', 'unavailable']) or
+        is_state(local_offset, ['unknown', 'unavailable']) }}
+  old_offset: "{{ states(local_offset)|float(0) }}"
+  trv_raw: "{{ state_attr (trv_sensor, 'current_temperature')|float(0) - old_offset }}"
+  new_offset: "{{ states(remote_sensor)|float(0) - trv_raw }}"
+  damped_offset: "{{ ((1-alpha) * new_offset + alpha * old_offset)|round(precision=1) }}"
+  offset_changed: "{{ (old_offset - damped_offset)|abs >= threshold }}"
+  sensible_offset: "{{ damped_offset|abs < 4 }}"
 
 triggers:
   - trigger: state
@@ -72,14 +86,19 @@ triggers:
     for:
       seconds: 30
 
-conditions: "{{ offset_changed }}"
+conditions: "{{ not invalid_inputs and offset_changed and sensible_offset }}"
 
 actions:
   - action: number.set_value
     metadata: {}
     data:
-      value: "{{ new_offset }}"
+      value: "{{ damped_offset }}"
     target:
       entity_id: "{{ local_offset }}"
+  # we will probably get called back once we change the offset, because
+  # the recorded temperature will change.  It should calculate the same
+  # offset and therefore offset_changed will be false. But to avoid 
+  # any possibility of a loop we delay here to abort any
+  # callback that gets through the conditions: section.
   - delay:
       minutes: 1
